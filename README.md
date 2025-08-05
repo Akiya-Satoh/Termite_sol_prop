@@ -31,7 +31,7 @@
 * min:                                              minimum proportion of soldiers
 * max:                                             maximum proportion of soldiers
 * sol_prop_ref.:                              references for soldier ratio data
-* sol_morph*_*ref.:                          references for soldiers' head morphology
+* sol_morph_ref.:                          references for soldiers' head morphology
 * sol_str_ref.:                                 references for soldiers' defensive behavior
 * note:                                            notes for classification
 * collection:                                   Colony collection methods (ec: entire colony, fg: foraging group, lc: laboratory colony, sc: sample taken from a mound, pg: peripheral gallery, and ?: unknown)
