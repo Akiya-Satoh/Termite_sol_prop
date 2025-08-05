@@ -72,3 +72,6 @@ prop_of_termite_soldier.Rproj:       R project file
                               Processing.R:         Codes for preprocessing data sets
 
                               Sources.R:              Codes for packages
+
+#### Phylogeny
+Phylogenetic tree data used for this study. The data was from Mizumoto and Bourguignon (2021)
