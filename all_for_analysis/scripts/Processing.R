@@ -1,0 +1,84 @@
+{
+  rm(list = ls())
+  source("scripts/sources.R")
+}
+tree_no3rd <- read.nexus("phylogeny/210315_DataS4-tree.tre")
+# drop outgroup
+label <- tree_no3rd$tip.label
+out.group <- is.na(str_locate(label, "Ter")[,1] | str_locate(label, "ter")[,1])
+termite.tree <- drop.tip(tree_no3rd, label[out.group])
+termite.tree <- ladderize(termite.tree)
+# fix errors in the label names
+label<- termite.tree$tip.label
+label[label=="Coptotermes_priscus"] <-  "Coptotermes_priscus_fossil"
+label <- str_replace(label, "Homalotermes", "Homallotermes")
+termite.tree$tip.label <- label
+# drop fossil species
+fossil <- !is.na(str_locate(label, "fossil")[,1])
+termite.tree <- drop.tip(termite.tree, label[fossil])
+# drop Havilanditermes (synonym to Nasutitermes)
+termite.tree <- drop.tip(termite.tree, "Havilanditermes_atripennis")
+# label name = genus name
+label<- termite.tree$tip.label
+label <- str_replace(label, "_.*", "")
+termite.tree$tip.label <- label
+plot(termite.tree, cex = 0.3)
+
+# all data ---------------------------
+{
+  d.all <- read.xlsx("data_raw/Genus-level_data.xlsx", sheet = 1)         
+  d.all.ec <- read.xlsx("data_raw/Genus-level_data.xlsx", sheet = 2)
+  d.exclude_ambiguous <- read.xlsx("data_raw/Genus-level_data.xlsx", sheet = 3)
+}
+# Reduce data to match phylogeny ----
+termite.tree <- drop.tip(termite.tree, label[!(label %in% d.all$Genus)])
+plot(termite.tree, cex=0.35)
+
+d.cubi_sp <- d.all %>%
+  mutate(
+    Soldier_str = if_else(Sub.Family == "Cubitermitinae", 1, Soldier_str),
+    Soldier_str_string = if_else(Sub.Family == "Cubitermitinae", "Strong-point", Soldier_str_string)
+    )
+  
+# save output data ----
+{
+  save(d.all, file = "data_fmt/Data_tree_genera.Rdata")
+  save(termite.tree, file = "data_fmt/Termite_tree.Rdata")
+  save(d.cubi_sp, file = "data_fmt/Data_tree_genera_cubisp.Rdata")
+}
+
+#if use entire colony data ----
+# Reduce data to match phylogeny
+{
+  d.tree.ec <- NULL
+  label<- termite.tree$tip.label
+  for(i in 1:length(label)){
+    Genus <- label[i]
+    d.tree.ec <- rbind(d.tree.ec, d.all.ec[d.all.ec$Genus == Genus,])
+  }
+  row.names(d.tree.ec) <- 1:dim(d.tree.ec)[1]
+}
+termite.tree.ec <- drop.tip(termite.tree, label[!(label %in% d.tree.ec$Genus)])
+plot(termite.tree.ec, cex=0.35)
+# save output data ----
+{
+  save(d.tree.ec, file = "data_fmt/Data_tree_genera_ec.Rdata")
+  save(termite.tree.ec, file = "data_fmt/Termite_tree_ec.Rdata")
+}
+
+#####exclude all ambiguous genera#####
+{
+  d.tree.aex <- NULL
+  label<- termite.tree$tip.label
+  for(i in 1:length(label)){
+    Genus <- label[i]
+    d.tree.aex <- rbind(d.tree.aex, d.all_excluded[d.all_excluded$Genus == Genus,])
+  }
+  row.names(d.tree.aex) <- 1:dim(d.tree.aex)[1]
+}
+termite.tree.aex <- drop.tip(termite.tree, label[!(label %in% d.tree.aex$Genus)])
+plot(termite.tree.aex, cex=0.35)
+{
+  save(d.tree.aex, file = "data_fmt/Data_all_exclude.Rdata")
+  save(termite.tree.aex, file = "data_fmt/Termite_tree_all_exclude.Rdata")
+}

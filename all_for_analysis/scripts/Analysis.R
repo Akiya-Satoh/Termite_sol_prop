@@ -1,0 +1,206 @@
+## dependencies
+{
+  rm(list = ls())
+  source("scripts/sources.R")
+  load("data_fmt/Data_tree_genera.Rdata")
+  load("data_fmt/Termite_tree.Rdata")
+  ##load divided data
+  load("data_fmt/Data_tree_genera_ec.Rdata")
+  load("data_fmt/Termite_tree_ec.Rdata")
+  #assuming all Cubitermitinae are strong-point strategists
+  load("data_fmt/Data_tree_genera_cubisp.Rdata")
+  #all ambiguous genera excluded
+  load("data_fmt/Data_all_exclude.Rdata")
+  load("data_fmt/Termite_tree_all_exclude.Rdata")
+}
+## 
+{
+  # summary of the num of genera for foraging and defense strategies
+  print( table(d.all[,c("Forager_string", "Soldier_str_string")]) )
+  print( table(d.all[,c("Forager", "Soldier_str")]) )
+  print( table(d.all[,c("Forager", "Soldier_str")]) )
+}
+
+# ----- Pagel test (Nesting type - soldier strategy)  -----
+{
+  sol_str_string <- d.all$Soldier_str_string
+  forager_string <- d.all$Forager_string
+  names(sol_str_string) = names(forager_string) = d.all$Genus
+}
+fitARD <- fitPagel(termite.tree, forager_string, sol_str_string)
+fitER <- fitPagel(termite.tree, forager_string, sol_str_string, model="ER")
+
+#a model assume that two traits have different backward & forward rates
+fitARD
+#Model fit:
+#            log-likelihood      AIC
+#independent      -56.21834 120.4367
+#dependent        -50.23331 116.4666
+
+#Hypothesis test result:
+#  likelihood-ratio:  11.9701 
+#p-value:  0.0175753 
+
+fitER #assume that there is just one rate between two traits
+
+#Model fit:
+#            log-likelihood      AIC
+#independent      -60.69994 125.3999
+#dependent        -55.45421 118.9084
+
+#Hypothesis test result:
+#  likelihood-ratio:  10.4915 
+#  p-value:  0.00526992
+
+# ----- Pagel test (supplimentary analysis)  -----
+#assume that all cubitermitinae is strong-point
+{
+  sol_str_string <- d.cubi_sp$Soldier_str_string
+  forager_string <- d.cubi_sp$Forager_string
+  names(sol_str_string) = names(forager_string) = d.cubi_sp$Genus
+}
+fitARD <- fitPagel(termite.tree, forager_string, sol_str_string)
+fitER <- fitPagel(termite.tree, forager_string, sol_str_string, model = "ER")
+fitARD
+#Model fit:
+#            log-likelihood      AIC
+#independent      -51.14530 110.2906
+#dependent        -46.96975 109.9395
+#Hypothesis test result:
+#  likelihood-ratio:  8.35109 
+#  p-value:  0.0795315 
+
+fitER
+#Model fit:
+#            log-likelihood      AIC
+#independent      -55.76829 115.5366
+#dependent        -52.09437 112.1887
+
+#Hypothesis test result:
+#  likelihood-ratio:  7.34784 
+#  p-value:  0.0253768 
+
+
+#exclude all ambiguous genera
+{
+  sol_str_string <- d.tree.aex$Soldier_str_string
+  forager_string <- d.tree.aex$Forager_string
+  names(sol_str_string) = names(forager_string) = d.tree.aex$Genus
+}
+fitARD <- fitPagel(termite.tree.aex, forager_string, sol_str_string)
+fitARD
+#Model fit:
+#            log-likelihood      AIC
+#independent      -20.07081 48.14162
+#dependent        -15.50221 47.00443
+#Hypothesis test result:
+#  likelihood-ratio:  9.1372 
+#  p-value:  0.0577602 
+
+fitER <- fitPagel(termite.tree.aex, forager_string, sol_str_string, model = "ER")
+fitER
+#Model fit:
+#            log-likelihood      AIC
+#independent      -21.77923 47.55845
+#dependent        -18.83600 45.67201
+
+#Hypothesis test result:
+#  likelihood-ratio:  5.88644 
+#  p-value:  0.0526957 
+
+
+# Phylogenetic Analysis for proportion of soldier -----------------------
+# ----- Phyloglm (soldier strategy vs proportion of soldier)  -----
+d.sol.str.glm <- d.all
+row.names(d.sol.str.glm) <- d.all$Genus
+r <- phyloglm(Soldier_str ~ soldier_prop, 
+              phy=termite.tree, 
+              data = d.sol.str.glm,
+              boot = 1000, method = c("logistic_MPLE"))
+summary(r)
+#Coefficients:
+#               Estimate    StdErr   z.value lowerbootCI upperbootCI   p.value    
+# (Intercept)   2.307928  0.853870  2.702902    1.007912      3.6651 0.0068737 ** 
+# soldier_prop -0.227199  0.063636 -3.570313   -0.363556     -0.1197 0.0003566 ***
+
+#####Phylogenetic Analysis for proportion of soldier (robust dataset)
+d.ec.glm <- d.tree.ec %>%
+  rename(sol_str = 8)
+row.names(d.ec.glm) <- d.ec.glm$Genus
+r <- phyloglm(sol_str ~ soldier_prop, 
+              phy=termite.tree.ec, 
+              data = d.ec.glm,
+              boot = 1000, method = c("logistic_MPLE"))
+summary(r)
+
+
+#Coefficients:
+#              Estimate   StdErr  z.value lowerbootCI upperbootCI p.value  
+#  (Intercept)   2.59410  1.04731  2.47690     1.00568      4.1016 0.01325 *
+#  soldier_prop -0.30693  0.14267 -2.15126    -0.45948     -0.0870 0.03146 *
+
+
+##if only entire colony data from multiple colonies are used (exclude "oec" data)##
+#Coefficients:
+#             Estimate   StdErr  z.value lowerbootCI upperbootCI p.value  
+#(Intercept)   2.40932  1.02480  2.35101     0.85493      3.8702 0.01872 *
+#soldier_prop -0.29325  0.14008 -2.09341    -0.45130     -0.0890 0.03631 *
+
+# ----- Phyloglm if all Cubitermitinae were strong-point strategist  -----
+d.cubi.glm <- d.cubi_sp %>%
+  rename(sol_str = 8)
+row.names(d.cubi.glm) <- d.cubi.glm$Genus
+r <- phyloglm(sol_str ~ soldier_prop, 
+              phy=termite.tree, 
+              data = d.cubi.glm,
+              boot = 1000, method = c("logistic_MPLE"))
+summary(r)
+
+#Coefficients:
+#               Estimate    StdErr   z.value lowerbootCI upperbootCI   p.value    
+# (Intercept)   2.505909  0.758942  3.301843    1.248839      3.5629 0.0009605 ***
+# soldier_prop -0.271416  0.071872 -3.776401   -0.374465     -0.1488 0.0001591 ***
+
+# ----- Phyloglm exclude all ambiguous genera -----
+d.sol.str.glm <- d.tree.aex
+row.names(d.sol.str.glm) <- d.tree.aex$Genus
+r <- phyloglm(Soldier_str ~ soldier_prop, 
+              phy=termite.tree.aex, 
+              data = d.sol.str.glm,
+              boot = 1000, method = c("logistic_MPLE"))
+summary(r)
+
+#Coefficients:
+#               Estimate    StdErr   z.value lowerbootCI upperbootCI p.value  
+# (Intercept)   1.151732  0.812746  1.417087   -0.107216      2.9326 0.15646  
+# soldier_prop -0.161333  0.075716 -2.130764   -0.394351     -0.0409 0.03311 *
+
+
+#####Ancestral State Reconstruction#####
+#defence strategy
+{
+  sol_str_string <- d.all$Soldier_str_string
+  forager_string <- d.all$Forager_string
+  names(sol_str_string) = names(forager_string) = d.all$Genus
+}
+###
+{
+asr1.ER <- ace(sol_str_string, termite.tree, type="discrete", model="ER")
+stat_data <- data.frame(label = names(sol_str_string),
+                        stat1 = sol_str_string)
+tree2 <- full_join(termite.tree, stat_data, by = 'label')
+
+ancstats <- as.data.frame(asr1.ER$lik.anc)
+ancstats$node <- 1:termite.tree$Nnode+Ntip(termite.tree)
+pies <- nodepie(ancstats, cols = 1:2)
+pies <- lapply(pies, function(g) g + scale_fill_viridis(discrete = T, end = .8))
+
+ggtree(tree2, ladderize = FALSE, size = 0.65) +
+  geom_tippoint(aes(color = stat1), size = 1.8) +
+  theme(legend.position = "none", aspect.ratio = 2) +
+  geom_tiplab(size = 2.5, offset = 10)  +
+  scale_color_viridis(discrete = T, end = .8) + 
+  geom_inset(pies, hjust = 1, vjust = .25, width = 0.08, height = 0.08)  + 
+  xlim(c(0,200))
+ggsave("output/asr_strategy_2_ARD.pdf", width = 3, height = 6)
+}
